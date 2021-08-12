@@ -9,10 +9,15 @@ var circumfrence = radius * 2.0 * PI * circumfrenceMultiplier
 var length = circumfrence * 1.15 / float(points)
 var iterations = 10
 
+
+export(float) var default_radius = 50.0
+export(float) var default_circumfrence_multiplier = 1.0
+export(int)   var default_points = 12
+
 export var physics_material: PhysicsMaterial
-export(float) var weight = 1
+export(float) var collision_radius = 5
 export(float) var jump_strength = 1000
-export(float) var gravity = 98
+export(float) var gravity = 1
 export(float) var linear_damp = 0.1
 export(float) var shape_impulse_strength = 5
 
@@ -39,7 +44,9 @@ func setDistance(currentPoint, anchor, distance):
 	return toAnchor + anchor
 
 func _ready():
-	resetBlob()
+	set_circumfrence(default_circumfrence_multiplier)
+	set_radius(default_radius)
+	set_point_count(default_points)
 
 func findCentroid():
 	var x = 0.0
@@ -68,7 +75,7 @@ func updateSprite ():
 	
 	curve.clear_points()
 	for i in range(points + 1):
-		curve.add_point(polBlob[i])
+		curve.add_point(polBlob[i] - position)
 	
 	var point_count = curve.get_point_count()
 	for i in point_count:
@@ -172,15 +179,20 @@ func _physics_process(delta):
 		for i in range (points * 3): 
 			accumulatedDisplacements[i] = 0
 	
+	position = findCentroid()
+	
 	updateSprite()
 	update()
 
 func _process(delta):
 	if Input.is_action_just_pressed("ui_accept"):
-		var x = Input.get_joy_axis(0, 0)
-		var y = Input.get_joy_axis(0, 1)
+		var x = Input.get_joy_axis(0, JOY_AXIS_0)
+		var y = Input.get_joy_axis(0, JOY_AXIS_1)
 		for i in range(blob_colliders.size()):
 			blob_colliders[i].apply_central_impulse(Vector2(x,y)*jump_strength)
+
+
+
 
 func create_collider(pos, radius):
 	var collider = RigidBody2D.new()
@@ -192,10 +204,10 @@ func create_collider(pos, radius):
 	collider.collision_mask = 0
 	collider.physics_material_override = physics_material
 	collider.position = pos
-	#collider.mass = weight
 	collider.gravity_scale = gravity
 	collider.linear_damp = linear_damp
 	collider.continuous_cd = RigidBody2D.CCD_MODE_CAST_RAY
+	collider.set_as_toplevel(true)
 	self.add_child(collider)
 	return collider
 
@@ -213,7 +225,7 @@ func resetBlob ():
 		var delta = getVectorByLA(radius, (360.0 / float(points)) * i)
 		blob.append(position + delta)
 		blobOld.append(position + delta)
-		blob_colliders.append(create_collider(position + delta, 5))
+		blob_colliders.append(create_collider(position + delta, collision_radius))
 		normals.append([])
 		normals[i].append(position + delta)
 		normals[i].append(position + delta * 1.5)
@@ -224,27 +236,23 @@ func resetBlob ():
 
 
 # Circumfrence Slider
-func _on_HSlider_value_changed(value):
+func set_circumfrence(value):
 	circumfrenceMultiplier = value
 	circumfrence = radius * 2.0 * PI * circumfrenceMultiplier
 	length = circumfrence * 1.15 / float(points)
 
-
-
 # Area Slider
-func _on_HSlider3_value_changed(value):
+func set_radius(value):
 	radius = value
 	area = radius * radius * PI
 	circumfrence = radius * 2.0 * PI * circumfrenceMultiplier
 	length = circumfrence * 1.15 / float(points)
-	print(area)
 
 # Points Slider
-func _on_HSlider4_value_changed(value):
+func set_point_count(value):
 	points = value
 	area = radius * radius * PI
 	circumfrence = radius * 2.0 * PI * circumfrenceMultiplier
 	length = circumfrence * 1.15 / float(points)
-	print(points)
 	
 	resetBlob()

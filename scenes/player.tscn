@@ -7,7 +7,9 @@ _data = {
 "points": PoolVector2Array(  )
 }
 
-[node name="Player" type="Node2D"]
+[node name="Player" type="Node2D" groups=[
+"player_object",
+]]
 script = ExtResource( 1 )
 __meta__ = {
 "_edit_lock_": true
